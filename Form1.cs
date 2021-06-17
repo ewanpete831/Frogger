@@ -54,6 +54,7 @@ namespace Frogger
         SolidBrush roadBrush = new SolidBrush(Color.DarkGray);
         SolidBrush vehicleBrush = new SolidBrush(Color.White);
         SolidBrush obstacleBrush = new SolidBrush(Color.Gold);
+        Pen roadPen = new Pen(Color.Gold, 5);
 
         public Form1()
         {
@@ -169,11 +170,15 @@ namespace Frogger
             }
             else if (gameState == "running")
             {
-
                 e.Graphics.FillRectangle(roadBrush, 0, 0, this.Width, this.Height);
                 e.Graphics.FillRectangle(safeBrush, 0, this.Height - 70, this.Width, 70);
                 e.Graphics.FillRectangle(safeBrush, 0, 210, this.Width, 70);
                 e.Graphics.FillRectangle(safeBrush, 0, 0, this.Width, 70);
+                e.Graphics.DrawLine(roadPen, 0, 140, this.Width, 140);
+                e.Graphics.DrawLine(roadPen, 0, 350, this.Width, 350);
+                e.Graphics.DrawLine(roadPen, 0, 420, this.Width, 420);
+                e.Graphics.DrawLine(roadPen, 0, 490, this.Width, 490);
+                e.Graphics.DrawLine(roadPen, 0, 560, this.Width, 560);
 
                 for (int i = 0; i < vehicles.Count(); i++)
                 {
