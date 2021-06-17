@@ -25,11 +25,9 @@ namespace Frogger
 
         int vehicleWitdh = 150;
         int vehicleHeight = 70;
-
         int defaultMoveTimer = 9;
 
         string gameState = "starting";
-
         string endText = "";
 
         SoundPlayer horn = new SoundPlayer(Properties.Resources.horn);
@@ -48,17 +46,14 @@ namespace Frogger
         int lastPlayerX = 0;
         int lastPlayerY = 0;
 
-
         int lives = 3;
         int moveTimer = 7;
         string frogDirection = "up";
-
 
         SolidBrush safeBrush = new SolidBrush(Color.Green);
         SolidBrush roadBrush = new SolidBrush(Color.DarkGray);
         SolidBrush vehicleBrush = new SolidBrush(Color.White);
         SolidBrush obstacleBrush = new SolidBrush(Color.Gold);
-
 
         public Form1()
         {
@@ -68,7 +63,6 @@ namespace Frogger
             obstacles.Add(new Rectangle(380, 210, 70, 70));
             obstacles.Add(new Rectangle(520, 210, 70, 70));
 
-
             InitializeComponent();
         }
 
@@ -76,7 +70,6 @@ namespace Frogger
         {
             player.X = 240;
             player.Y = 630;
-
             lives = 3;
 
             titleLabel.Text = "";
@@ -108,7 +101,6 @@ namespace Frogger
                 case Keys.Down:
                     downDown = false;
                     break;
-
             }
         }
 
@@ -273,8 +265,6 @@ namespace Frogger
         }
 
         private void CreateVehicles()
-
-
         {
             int randomSpeed = 0;
 
@@ -353,7 +343,6 @@ namespace Frogger
                 lastLanes[1] = lastLanes[0];
                 lastLanes[0] = randValue;
             }
-
             vehicleTimer++;
         }
 
@@ -426,7 +415,6 @@ namespace Frogger
                     life3Picture.BackgroundImage = Properties.Resources.greyheart;
                     break;
             }
-
         }
 
         private void MoveVehicles()
@@ -460,7 +448,6 @@ namespace Frogger
                 gameState = "over";
                 endText = "You got hit by a vehicle";
                 gameTimer.Enabled = false;
-
             }
         }
 
@@ -474,7 +461,6 @@ namespace Frogger
                     player.Y = lastPlayerY;
                 }
             }
-
             lastPlayerX = player.X;
             lastPlayerY = player.Y;
         }
