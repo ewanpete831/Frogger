@@ -1,4 +1,6 @@
-﻿using System;
+﻿//created by Ewan Peterson, 06/17/21 for ICS3U
+
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -7,6 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Media;
 
 namespace Frogger
 {
@@ -28,6 +31,9 @@ namespace Frogger
         string gameState = "starting";
 
         string endText = "";
+
+        SoundPlayer horn = new SoundPlayer(Properties.Resources.horn);
+        SoundPlayer win = new SoundPlayer(Properties.Resources.winner);
 
         bool upDown = false;
         bool downDown = false;
@@ -387,6 +393,7 @@ namespace Frogger
             {
                 if (player.IntersectsWith(vehicles[i]))
                 {
+                    horn.Play();
                     lives--;
                     player.X = 240;
                     player.Y = 630;
@@ -443,7 +450,7 @@ namespace Frogger
         {
             if (player.Y == 0)
             {
-
+                win.Play();
                 gameState = "over";
                 endText = "You made it to the end!";
                 gameTimer.Enabled = false;

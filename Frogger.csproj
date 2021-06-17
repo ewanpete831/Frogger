@@ -96,5 +96,11 @@
   <ItemGroup>
     <None Include="Resources\truck1.png" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\419698__14fvaltrovat__short-horn.wav" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\winner.wav" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
