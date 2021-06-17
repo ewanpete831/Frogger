@@ -16,7 +16,9 @@ namespace Frogger
         int playerMoveDistance = 70;
 
         List<Rectangle> vehicles = new List<Rectangle>();
-        List<int> vehicleSpeeds= new List<int>();
+        List<int> vehicleSpeeds = new List<int>();
+        List<int> vehicleColours = new List<int>();
+        List<Rectangle> obstacles = new List<Rectangle>();
 
         int vehicleWitdh = 150;
         int vehicleHeight = 70;
@@ -34,12 +36,11 @@ namespace Frogger
 
         Random randNum = new Random();
         int randValue = 0;
-        int lastLane = 0;
-        int secondLastLane = 0;
-        int thirdLastLane = 0;
-        int fourthLastLane = 0;
+        int[] lastLanes = new int[5];
 
-        int vehicleTimer = 0;
+        int vehicleTimer = 5;
+        int lastPlayerX = 0;
+        int lastPlayerY = 0;
 
 
         int lives = 3;
@@ -47,10 +48,21 @@ namespace Frogger
         string frogDirection = "up";
 
 
-        SolidBrush testBrush = new SolidBrush(Color.Black);
+        SolidBrush safeBrush = new SolidBrush(Color.Green);
+        SolidBrush roadBrush = new SolidBrush(Color.DarkGray);
+        SolidBrush vehicleBrush = new SolidBrush(Color.White);
+        SolidBrush obstacleBrush = new SolidBrush(Color.Gold);
+
 
         public Form1()
         {
+            obstacles.Add(new Rectangle(240, 210, 70, 70));
+            obstacles.Add(new Rectangle(100, 210, 70, 70));
+            obstacles.Add(new Rectangle(-40, 210, 70, 70));
+            obstacles.Add(new Rectangle(380, 210, 70, 70));
+            obstacles.Add(new Rectangle(520, 210, 70, 70));
+
+
             InitializeComponent();
         }
 
@@ -68,11 +80,11 @@ namespace Frogger
 
             vehicles.Clear();
             vehicleSpeeds.Clear();
+            vehicleColours.Clear();
 
             gameTimer.Enabled = true;
             gameState = "running";
         }
-
 
         private void Form1_KeyUp(object sender, KeyEventArgs e)
         {
@@ -90,7 +102,7 @@ namespace Frogger
                 case Keys.Down:
                     downDown = false;
                     break;
-               
+
             }
         }
 
@@ -127,6 +139,220 @@ namespace Frogger
         private void gameTimer_Tick(object sender, EventArgs e)
         {
             //move player
+            MovePlayer();
+
+            //check for vehicle collision
+            CheckVehicleCollision();
+
+            //check for collision with obstacle
+            CheckObstacleCollision();
+
+            //create new vehicles
+            CreateVehicles();
+
+            //move vehicles
+            MoveVehicles();
+
+            //remove vehicles off screen
+            RemoveVehicles();
+
+            //check for player win, or game over
+            CheckForGameOver();
+
+            Refresh();
+        }
+
+        private void Form1_Paint(object sender, PaintEventArgs e)
+        {
+            if (gameState == "starting")
+            {
+                titleLabel.Text = "Frogger";
+                subTitleLabel.Text = "Press 'Space' to Start      Press 'Esc' to Exit";
+            }
+            else if (gameState == "running")
+            {
+
+                e.Graphics.FillRectangle(roadBrush, 0, 0, this.Width, this.Height);
+                e.Graphics.FillRectangle(safeBrush, 0, this.Height - 70, this.Width, 70);
+                e.Graphics.FillRectangle(safeBrush, 0, 210, this.Width, 70);
+                e.Graphics.FillRectangle(safeBrush, 0, 0, this.Width, 70);
+
+                for (int i = 0; i < vehicles.Count(); i++)
+                {
+                    switch (vehicleColours[i])
+                    {
+                        case 1:
+                            vehicleBrush.Color = Color.White;
+                            e.Graphics.FillRectangle(vehicleBrush, vehicles[i]);
+                            break;
+
+                        case 2:
+                            vehicleBrush.Color = Color.Red;
+                            e.Graphics.FillRectangle(vehicleBrush, vehicles[i]);
+                            break;
+
+                        case 3:
+                            vehicleBrush.Color = Color.Black;
+                            e.Graphics.FillRectangle(vehicleBrush, vehicles[i]);
+                            break;
+
+                        case 4:
+                            vehicleBrush.Color = Color.Blue;
+                            e.Graphics.FillRectangle(vehicleBrush, vehicles[i]);
+                            break;
+                    }
+                }
+                for (int i = 0; i < obstacles.Count; i++)
+                {
+                    e.Graphics.FillEllipse(obstacleBrush, obstacles[i]);
+                }
+
+                if (frogDirection == "up")
+                {
+                    e.Graphics.RotateTransform(0);
+                    e.Graphics.DrawImage(Properties.Resources.frog, player);
+                    e.Graphics.ResetTransform();
+                }
+                else if (frogDirection == "down")
+                {
+                    e.Graphics.TranslateTransform(player.X + player.Width, player.Y + player.Height);
+                    e.Graphics.RotateTransform(180);
+                    e.Graphics.ScaleTransform(0.15F, 0.18F);
+                    e.Graphics.DrawImage(Properties.Resources.frog, 0, 0);
+                    e.Graphics.ResetTransform();
+                }
+                else if (frogDirection == "left")
+                {
+                    e.Graphics.TranslateTransform(player.X, player.Y + player.Height);
+                    e.Graphics.RotateTransform(270);
+                    e.Graphics.ScaleTransform(0.15F, 0.18F);
+                    e.Graphics.DrawImage(Properties.Resources.frog, 0, 0);
+                    e.Graphics.ResetTransform();
+                }
+                else if (frogDirection == "right")
+                {
+                    e.Graphics.TranslateTransform(player.X + player.Width, player.Y);
+                    e.Graphics.RotateTransform(90);
+                    e.Graphics.ScaleTransform(0.15F, 0.18F);
+                    e.Graphics.DrawImage(Properties.Resources.frog, 0, 0);
+                    e.Graphics.ResetTransform();
+                }
+            }
+            else if (gameState == "over")
+            {
+                this.Size = new Size(550, 500);
+                titleLabel.Text = "GAME OVER";
+                subTitleLabel.Text = $"{endText}";
+                subTitleLabel.Text += "\nPress 'Space' to Start Over      Press 'Esc' to Exit";
+            }
+        }
+
+        private void RemoveVehicles()
+        {
+            for (int i = 0; i < vehicles.Count; i++)
+            {
+                if ((vehicles[i].Y == 70 || vehicles[i].Y == 280 || vehicles[i].Y == 420 || vehicles[i].Y == 560) && vehicles[i].X < 0 - vehicleWitdh)
+                {
+                    vehicles.RemoveAt(i);
+                    vehicleSpeeds.RemoveAt(i);
+                    vehicleColours.RemoveAt(i);
+                }
+                else if (vehicles[i].X > this.Width)
+                {
+                    vehicles.RemoveAt(i);
+                    vehicleSpeeds.RemoveAt(i);
+                    vehicleColours.RemoveAt(i);
+                }
+            }
+        }
+
+        private void CreateVehicles()
+
+
+        {
+            int randomSpeed = 0;
+
+            if (vehicleTimer > 8)
+            {
+                randValue = randNum.Next(1, 9);
+
+                if (randValue != lastLanes[0] && randValue != lastLanes[1] && randValue != lastLanes[2] && randValue != lastLanes[3] && randValue != lastLanes[4])
+                {
+                    switch (randValue)
+                    {
+                        case 1:
+                            vehicles.Add(new Rectangle(this.Width, 70, vehicleWitdh, vehicleHeight));
+                            randomSpeed = randNum.Next(6, 11);
+                            vehicleSpeeds.Add(randomSpeed);
+                            vehicleColours.Add(randNum.Next(1, 5));
+                            vehicleTimer = 0;
+                            break;
+
+                        case 2:
+                            vehicles.Add(new Rectangle(0 - vehicleWitdh, 140, vehicleWitdh, vehicleHeight));
+                            randomSpeed = randNum.Next(6, 11);
+                            vehicleSpeeds.Add(randomSpeed);
+                            vehicleColours.Add(randNum.Next(1, 5));
+                            vehicleTimer = 0;
+                            break;
+
+                        case 4:
+                            vehicles.Add(new Rectangle(this.Width, 280, vehicleWitdh, vehicleHeight));
+                            randomSpeed = randNum.Next(6, 11);
+                            vehicleSpeeds.Add(randomSpeed);
+                            vehicleColours.Add(randNum.Next(1, 5));
+                            vehicleTimer = 0;
+                            break;
+
+                        case 5:
+                            vehicles.Add(new Rectangle(0 - vehicleWitdh, 350, vehicleWitdh, vehicleHeight));
+                            randomSpeed = randNum.Next(6, 11);
+                            vehicleSpeeds.Add(randomSpeed);
+                            vehicleColours.Add(randNum.Next(1, 5));
+                            vehicleTimer = 0;
+                            break;
+
+                        case 6:
+                            vehicles.Add(new Rectangle(this.Width, 420, vehicleWitdh, vehicleHeight));
+                            randomSpeed = randNum.Next(6, 11);
+                            vehicleSpeeds.Add(randomSpeed);
+                            vehicleColours.Add(randNum.Next(1, 5));
+                            vehicleTimer = 0;
+                            break;
+
+                        case 7:
+                            vehicles.Add(new Rectangle(0 - vehicleWitdh, 490, vehicleWitdh, vehicleHeight));
+                            randomSpeed = randNum.Next(6, 11);
+                            vehicleSpeeds.Add(randomSpeed);
+                            vehicleColours.Add(randNum.Next(1, 5));
+                            vehicleTimer = 0;
+                            break;
+
+                        case 8:
+                            vehicles.Add(new Rectangle(this.Width, 560, vehicleWitdh, vehicleHeight));
+                            randomSpeed = randNum.Next(6, 11);
+                            vehicleSpeeds.Add(randomSpeed);
+                            vehicleColours.Add(randNum.Next(1, 5));
+                            vehicleTimer = 0;
+                            break;
+
+                        default:
+
+                            break;
+                    }
+                }
+                lastLanes[4] = lastLanes[3];
+                lastLanes[3] = lastLanes[2];
+                lastLanes[2] = lastLanes[1];
+                lastLanes[1] = lastLanes[0];
+                lastLanes[0] = randValue;
+            }
+
+            vehicleTimer++;
+        }
+
+        private void MovePlayer()
+        {
             moveTimer--;
 
             if (upDown == true && player.Y > 0 && moveTimer < 1)
@@ -153,11 +379,13 @@ namespace Frogger
                 moveTimer = defaultMoveTimer;
                 frogDirection = "right";
             }
+        }
 
-            //check for vehicle colission
+        private void CheckVehicleCollision()
+        {
             for (int i = 0; i < vehicles.Count; i++)
             {
-                if(player.IntersectsWith(vehicles[i]))
+                if (player.IntersectsWith(vehicles[i]))
                 {
                     lives--;
                     player.X = 240;
@@ -165,7 +393,6 @@ namespace Frogger
                     frogDirection = "up";
                 }
             }
-
             switch (lives)
             {
                 case 3:
@@ -193,79 +420,10 @@ namespace Frogger
                     break;
             }
 
-            //create new vehicles
-            int randomSpeed = 0;
+        }
 
-            if (vehicleTimer > 8)
-            {
-                randValue = randNum.Next(1, 9);
-                if (randValue != lastLane && randValue != secondLastLane && randValue != thirdLastLane && randValue != fourthLastLane)
-                {
-                    switch (randValue)
-                    {
-                        case 1:
-                            vehicles.Add(new Rectangle(this.Width, 70, vehicleWitdh, vehicleHeight));
-                            randomSpeed = randNum.Next(6, 11);
-                            vehicleSpeeds.Add(randomSpeed);
-                            vehicleTimer = 0;
-                            break;
-
-                        case 2:
-                            vehicles.Add(new Rectangle(0 - vehicleWitdh, 140, vehicleWitdh, vehicleHeight));
-                            randomSpeed = randNum.Next(6, 11);
-                            vehicleSpeeds.Add(randomSpeed);
-                            vehicleTimer = 0;
-                            break;
-
-                        case 4:
-                            vehicles.Add(new Rectangle(this.Width, 280, vehicleWitdh, vehicleHeight));
-                            randomSpeed = randNum.Next(6, 11);
-                            vehicleSpeeds.Add(randomSpeed);
-                            vehicleTimer = 0;
-                            break;
-
-                        case 5:
-                            vehicles.Add(new Rectangle(0 - vehicleWitdh, 350, vehicleWitdh, vehicleHeight));
-                            randomSpeed = randNum.Next(6, 11);
-                            vehicleSpeeds.Add(randomSpeed);
-                            vehicleTimer = 0;
-                            break;
-
-                        case 6:
-                            vehicles.Add(new Rectangle(this.Width, 420, vehicleWitdh, vehicleHeight));
-                            randomSpeed = randNum.Next(6, 11);
-                            vehicleSpeeds.Add(randomSpeed);
-                            vehicleTimer = 0;
-                            break;
-
-                        case 7:
-                            vehicles.Add(new Rectangle(0 - vehicleWitdh, 490, vehicleWitdh, vehicleHeight));
-                            randomSpeed = randNum.Next(6, 11);
-                            vehicleSpeeds.Add(randomSpeed);
-                            vehicleTimer = 0;
-                            break;
-
-                        case 8:
-                            vehicles.Add(new Rectangle(this.Width, 560, vehicleWitdh, vehicleHeight));
-                            randomSpeed = randNum.Next(6, 11);
-                            vehicleSpeeds.Add(randomSpeed);
-                            vehicleTimer = 0;
-                            break;
-
-                        default:
-
-                            break;
-                    }
-                }
-                fourthLastLane = thirdLastLane;
-                thirdLastLane = secondLastLane;
-                secondLastLane = lastLane;
-                lastLane = randValue;
-            }
-
-            vehicleTimer++;
-
-            //move vehicles
+        private void MoveVehicles()
+        {
             for (int i = 0; i < vehicles.Count(); i++)
             {
                 if (vehicles[i].Y == 140 || vehicles[i].Y == 350 || vehicles[i].Y == 490)
@@ -279,95 +437,41 @@ namespace Frogger
                     vehicles[i] = new Rectangle(x, vehicles[i].Y, vehicleWitdh, vehicleHeight);
                 }
             }
+        }
 
-            //remove vehicles off screen
-            for(int i = 0; i < vehicles.Count; i++)
+        private void CheckForGameOver()
+        {
+            if (player.Y == 0)
             {
-                if((vehicles[i].Y == 70|| vehicles[i].Y == 280 || vehicles[i].Y == 420 || vehicles[i].Y == 560)&& vehicles[i].X < 0 - vehicleWitdh)
-                {
-                    vehicles.RemoveAt(i);
-                    vehicleSpeeds.RemoveAt(i);
-                }
-                else if(vehicles[i].X > this.Width)
-                {
-                    vehicles.RemoveAt(i);
-                    vehicleSpeeds.RemoveAt(i);
-                }
-            }
 
-            //check for player win
-            if(player.Y == 0)
-            {
                 gameState = "over";
                 endText = "You made it to the end!";
                 gameTimer.Enabled = false;
-                
             }
-
-            //check for player out of lives
-            if(lives == 0)
+            if (lives == 0)
             {
                 gameState = "over";
                 endText = "You got hit by a vehicle";
                 gameTimer.Enabled = false;
-                
-            }
 
-            Refresh();
+            }
         }
 
-        private void Form1_Paint(object sender, PaintEventArgs e)
+        private void CheckObstacleCollision()
         {
-            if (gameState == "starting")
+            for (int i = 0; i < obstacles.Count; i++)
             {
-                titleLabel.Text = "Frogger";
-                subTitleLabel.Text = "Press 'Space' to Start      Press 'Esc' to Exit";
-            }
-            else if (gameState == "running")
-            {
-                for (int i = 0; i < vehicles.Count(); i++)
+                if (player.IntersectsWith(obstacles[i]))
                 {
-                    e.Graphics.FillRectangle(testBrush, vehicles[i]);
+                    player.X = lastPlayerX;
+                    player.Y = lastPlayerY;
                 }
+            }
 
-                if (frogDirection == "up")
-                {
-                    e.Graphics.RotateTransform(0);
-                    e.Graphics.DrawImage(Properties.Resources.frog, player);
-                    e.Graphics.ResetTransform();
-                }
-                if (frogDirection == "down")
-                {
-                    e.Graphics.TranslateTransform(player.X + player.Width, player.Y + player.Height);
-                    e.Graphics.RotateTransform(180);
-                    e.Graphics.ScaleTransform(0.15F, 0.18F);
-                    e.Graphics.DrawImage(Properties.Resources.frog, 0, 0);
-                    e.Graphics.ResetTransform();
-                }
-                if (frogDirection == "left")
-                {
-                    e.Graphics.TranslateTransform(player.X, player.Y + player.Height);
-                    e.Graphics.RotateTransform(270);
-                    e.Graphics.ScaleTransform(0.15F, 0.18F);
-                    e.Graphics.DrawImage(Properties.Resources.frog, 0, 0);
-                    e.Graphics.ResetTransform();
-                }
-                if (frogDirection == "right")
-                {
-                    e.Graphics.TranslateTransform(player.X + player.Width, player.Y);
-                    e.Graphics.RotateTransform(90);
-                    e.Graphics.ScaleTransform(0.15F, 0.18F);
-                    e.Graphics.DrawImage(Properties.Resources.frog, 0, 0);
-                    e.Graphics.ResetTransform();
-                }
-                
-            }
-            else if (gameState == "over")
-            {
-                titleLabel.Text = "GAME OVER";
-                subTitleLabel.Text = $"{endText}";
-                subTitleLabel.Text += "\nPress 'Space' to Start Over      Press 'Esc' to Exit";
-            }
+            lastPlayerX = player.X;
+            lastPlayerY = player.Y;
         }
     }
 }
+
+
